@@ -7,8 +7,12 @@ option(BUILD_TESTS "Build nsweb test cases" OFF)
 add_library(nsweb STATIC "")
 set_target_properties(nsweb PROPERTIES OUTPUT_NAME "nsweb")
 set_target_properties(nsweb PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-target_include_directories(nsweb PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+target_include_directories(nsweb
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_compile_features(nsweb PRIVATE cxx_std_11)
 target_link_libraries(nsweb PRIVATE
