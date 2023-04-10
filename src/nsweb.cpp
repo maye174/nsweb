@@ -199,6 +199,26 @@ bool websocket_client::perform_handshake(const std::string& url) {
         return false;
     }
 
+    // 查找 Sec-WebSocket-Accept
+    const char *sec_websocket_accept_start = strstr(buffer, "Sec-WebSocket-Accept: ");
+    if (sec_websocket_accept_start == nullptr) {
+        std::cerr << "Failed to find Sec-WebSocket-Accept." << std::endl;
+        return false;
+    }
+
+    // 提取 Sec-WebSocket-Accept
+    std::string sec_websocket_accept(sec_websocket_accept_start + 22, 
+                                    sec_websocket_accept_start + 55);
+
+    // 计算期望的 Sec-WebSocket-Accept
+    std::string expected_sec_websocket_accept = generate_websocket_accept(sec_websocket_key);
+    
+    // 验证 Sec-WebSocket-Accept
+    if (sec_websocket_accept.find(expected_sec_websocket_accept) == std::string::npos ) {
+        std::cerr << "Sec-WebSocket-Accept mismatch." << std::endl;
+        return false;
+    }
+
     return true;
 }
 

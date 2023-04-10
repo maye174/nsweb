@@ -1,7 +1,7 @@
 #include "tls_fun.hpp"
 
 #include <random>
-#include <mbedtls/md5.h>
+#include <mbedtls/sha1.h>
 #include <mbedtls/base64.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
@@ -34,16 +34,23 @@ std::string generate_websocket_key() {
 }
 
 std::string generate_websocket_accept(const std::string& sec_websocket_key) {
-    std::string concatenated = sec_websocket_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    uint8_t hash[16];
-    mbedtls_md5((const uint8_t*) concatenated.c_str(), concatenated.length(), hash);
+    // 固定的GUID字符串
+    const std::string guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-    size_t output_size = 0;
-    mbedtls_base64_encode(nullptr, 0, &output_size, hash, sizeof(hash));
-    std::string output(output_size, 0);
-    mbedtls_base64_encode((unsigned char*) &output[0], output.size(), &output_size, hash, sizeof(hash));
+    // 拼接字符串
+    std::string concat = sec_websocket_key + guid;
 
-    return output;
+    // 计算SHA-1哈希值
+    unsigned char hash[20];
+    mbedtls_sha1((unsigned char*)concat.c_str(), concat.length(), hash);
+
+    // Base64编码
+    size_t olen = 0;
+    char b64_buf[32];
+    mbedtls_base64_encode((unsigned char*)b64_buf, sizeof(b64_buf), &olen, hash, sizeof(hash));
+    std::string accept(b64_buf, olen);
+
+    return accept;
 }
 
 }
