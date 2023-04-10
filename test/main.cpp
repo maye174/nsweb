@@ -29,7 +29,7 @@ int main() {
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // 断开与服务器的连接
-        ws_client.disconnect();
+        ws_client.disconnect(true);
         std::cout << "Disconnected from server." << std::endl;
     } else {
         std::cerr << "Failed to connect to server." << std::endl;
