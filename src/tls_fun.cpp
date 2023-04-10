@@ -3,25 +3,34 @@
 #include <random>
 #include <mbedtls/md5.h>
 #include <mbedtls/base64.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
 
 namespace nsweb {
 
 std::string generate_websocket_key() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 255);
+    // 初始化随机数生成器
+    mbedtls_ctr_drbg_context drbg;
+    mbedtls_ctr_drbg_init(&drbg);
+    mbedtls_entropy_context entropy;
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_seed(&drbg, mbedtls_entropy_func, &entropy, NULL, 0);
 
-    uint8_t key[16];
-    for (int i = 0; i < 16; i++) {
-        key[i] = dis(gen);
-    }
+    // 生成随机数
+    unsigned char buf[16];
+    mbedtls_ctr_drbg_random(&drbg, buf, sizeof(buf));
 
-    size_t output_size = 0;
-    mbedtls_base64_encode(nullptr, 0, &output_size, key, sizeof(key));
-    std::string output(output_size, 0);
-    mbedtls_base64_encode((unsigned char*) output.c_str(), output.size(), &output_size, key, sizeof(key));
+    // Base64编码
+    size_t olen = 0;
+    char b64_buf[32];
+    mbedtls_base64_encode((unsigned char*)b64_buf, sizeof(b64_buf), &olen, buf, sizeof(buf));
+    std::string key(b64_buf, olen);
 
-    return output;
+    // 清理资源
+    mbedtls_ctr_drbg_free(&drbg);
+    mbedtls_entropy_free(&entropy);
+
+    return key;
 }
 
 std::string generate_websocket_accept(const std::string& sec_websocket_key) {
