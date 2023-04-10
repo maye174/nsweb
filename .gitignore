@@ -1,6 +1,6 @@
 # Xmake cache
 .xmake/
-build/
+build*/
 bin/
 lib/
 
@@ -8,6 +8,5 @@ lib/
 .DS_Store
 
 .vscode/
-build-docker/
 
 switch-*.xz
