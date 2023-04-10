@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
+#include <string>
 
 namespace nsweb {
 
@@ -107,15 +108,22 @@ bool websocket_client::perform_handshake(const std::string& url) {
 
     // 生成随机的 Sec-websocket-Key
     std::string sec_websocket_key { generate_websocket_key() };
-    std::string http_url = websocket_url_to_http(url);
+    std::string ws_to_http = websocket_url_to_http(url);
+    std::string sub = http_to_sub(ws_to_http);
+
+    std::string http_url = http_sub_url(ws_to_http);
     std::string host_url = http_to_host(http_url);
-    std::string header_ = "GET / HTTP/1.1\r\n"
+
+    // 构造 HTTP 升级请求头
+    std::string header_ = "GET "+ sub +" HTTP/1.1\r\n"
                         "Host: " + host_url + "\r\n"
                         "Upgrade: websocket\r\n"
                         "Connection: Upgrade\r\n"
                         "Sec-WebSocket-Key: " + sec_websocket_key + "\r\n"
                         "Sec-WebSocket-Version: 13\r\n"
                         "\r\n"; // 注意最后一行的额外 \r\n
+
+    std::cout << "header_: " << header_;
     
     curl_easy_setopt(curl_, CURLOPT_URL, http_url.c_str());// 设置 libcurl 的 HTTP 请求 URL
     curl_easy_setopt(curl_, CURLOPT_VERBOSE, 1L);// 设置 libcurl 的 HTTP 请求调试选项
@@ -163,7 +171,7 @@ bool websocket_client::perform_handshake(const std::string& url) {
         return false;
     }
 
-    // 读取并验证101状态码
+    // 读取并验证 101 状态码
     char buffer[256];
     size_t received;
 
@@ -175,8 +183,19 @@ bool websocket_client::perform_handshake(const std::string& url) {
     }
     buffer[received] = 0;
 
+    // 查找状态码起始位置
+    const char *status_code_start = strstr(buffer, "HTTP/1.1");
+    if (status_code_start == nullptr) {
+        std::cerr << "Failed to find status code." << std::endl;
+        return false;
+    }
+
+    // 提取状态码
+    std::string status_code(status_code_start + 9, status_code_start + 12);
+
     if (received <= 0 || strncmp(buffer, "HTTP/1.1 101", 12) != 0) {
-        std::cerr << "Failed to receive 101 status code." << std::endl;
+        std::cerr << "Failed to receive 101 status code. Status code received: "
+                    << status_code << std::endl;
         return false;
     }
 
