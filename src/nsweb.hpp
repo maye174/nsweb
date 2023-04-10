@@ -6,6 +6,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <functional>
 #include <curl/curl.h>
 #include <wslay/wslay.h>
@@ -21,7 +22,7 @@ namespace nsweb {
         void disconnect(bool clear_curl);
         bool is_connected() const;
 
-        bool send(const std::string& data);
+        bool send(const std::string data);
         void set_onmessage_callback(std::function<void(const std::string&)> callback);
 
     private:
@@ -39,7 +40,8 @@ namespace nsweb {
         wslay_event_context_ptr wslay_ctx_;
         std::thread ws_thread_;
         std::mutex ws_mutex_;
-        bool is_connected_;
+        //bool is_connected_;
+        std::atomic_bool is_connected_{false};
         std::function<void(const std::string&)> onmessage_callback_;
     };
 }

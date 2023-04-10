@@ -36,7 +36,7 @@ bool websocket_client::connect(const std::string& url) {
         return false;
     }
     setup_wslay_event_callbacks();
-    is_connected_ = true;
+    is_connected_.store(true, std::memory_order_release);
     ws_thread_ = std::thread(&websocket_client::websocket_client_thread, this);
     return true;
 }
@@ -46,7 +46,7 @@ void websocket_client::disconnect(bool clear_curl) {
         return;
     }
 
-    is_connected_ = false;
+    is_connected_.store(false, std::memory_order_release);
     curl_easy_cleanup(curl_);
     if (clear_curl) {
         curl_global_cleanup();
@@ -60,10 +60,10 @@ void websocket_client::disconnect(bool clear_curl) {
 }
 
 bool websocket_client::is_connected() const {
-    return is_connected_;
+    return is_connected_.load(std::memory_order_acquire);
 }
 
-bool websocket_client::send(const std::string& data) {
+bool websocket_client::send(const std::string data) {
     if (!is_connected()) {
         return false;
     }
@@ -72,7 +72,7 @@ bool websocket_client::send(const std::string& data) {
     std::unique_lock<std::mutex> lock(ws_mutex_);
 
     wslay_event_msg msg;
-    msg.opcode = WSLAY_TEXT_FRAME;
+    msg.opcode = WSLAY_BINARY_FRAME;//二进制数据
     msg.msg = reinterpret_cast<const uint8_t*>(data.c_str());
     msg.msg_length = data.size();
 
