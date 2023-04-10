@@ -144,6 +144,7 @@ bool websocket_client::perform_handshake(const std::string& url) {
         return false;
     }
 
+    // 设置套接字缓冲区大小
     if (!set_socket_buffer_size(sockfd, 1024 * 1024)) {
         std::cerr << "Failed to set socket buffer size." << std::endl;
         return false;

@@ -2,9 +2,16 @@ add_rules("mode.debug", "mode.release")
 add_requires("libcurl", "wslay", "mbedtls")
 
 target("nsweb")
-    set_kind("binary")
+    set_kind("static")
     add_files("src/*.cpp")
     add_packages("libcurl", "wslay", "mbedtls")
+
+target("nsweb_test")
+    set_kind("binary")
+    add_files("test/*.cpp")
+    add_includedirs("src")
+    add_packages("libcurl", "wslay", "mbedtls")
+    add_deps("nsweb")
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --

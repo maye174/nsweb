@@ -10,9 +10,9 @@ project(nsweb LANGUAGES CXX C)
 # target
 set(CMAKE_C_COMPILER "/usr/bin/clang")
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-add_executable(nsweb "")
+add_library(nsweb STATIC "")
 set_target_properties(nsweb PROPERTIES OUTPUT_NAME "nsweb")
-set_target_properties(nsweb PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/linux/x86_64/debug")
+set_target_properties(nsweb PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/linux/x86_64/debug")
 target_include_directories(nsweb PRIVATE
     /usr/include/x86_64-linux-gnu
 )
@@ -48,10 +48,59 @@ target_link_options(nsweb PRIVATE
     -m64
 )
 target_sources(nsweb PRIVATE
-    src/main.cpp
     src/nsweb.cpp
     src/socket_fun.cpp
     src/tls_fun.cpp
     src/url_fun.cpp
+)
+
+# target
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+add_executable(nsweb_test "")
+set_target_properties(nsweb_test PROPERTIES OUTPUT_NAME "nsweb_test")
+set_target_properties(nsweb_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/linux/x86_64/debug")
+add_dependencies(nsweb_test nsweb)
+target_include_directories(nsweb_test PRIVATE
+    src
+)
+target_include_directories(nsweb_test PRIVATE
+    /usr/include/x86_64-linux-gnu
+)
+target_compile_options(nsweb_test PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:-m64>
+    $<$<COMPILE_LANGUAGE:CXX>:-m64>
+)
+if(MSVC)
+    target_compile_options(nsweb_test PRIVATE $<$<CONFIG:Debug>:-Od>)
+else()
+    target_compile_options(nsweb_test PRIVATE -O0)
+endif()
+if(MSVC)
+    target_compile_options(nsweb_test PRIVATE -Zi)
+else()
+    target_compile_options(nsweb_test PRIVATE -g)
+endif()
+if(MSVC)
+    set_property(TARGET nsweb_test PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+target_link_libraries(nsweb_test PRIVATE
+    curl
+    wslay
+    mbedtls
+    mbedcrypto
+    mbedx509
+    nsweb
+)
+target_link_directories(nsweb_test PRIVATE
+    /usr/lib/x86_64-linux-gnu
+    build/linux/x86_64/debug
+)
+target_link_options(nsweb_test PRIVATE
+    -m64
+)
+target_sources(nsweb_test PRIVATE
+    test/main.cpp
 )
 
