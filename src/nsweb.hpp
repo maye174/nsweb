@@ -18,7 +18,7 @@ namespace nsweb {
         ~websocket_client();
 
         bool connect(const std::string& url);
-        void disconnect();
+        void disconnect(bool clear_curl);
         bool is_connected() const;
 
         bool send(const std::string& data);

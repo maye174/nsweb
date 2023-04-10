@@ -14,7 +14,7 @@ websocket_client::websocket_client()
 
 // Destructor
 websocket_client::~websocket_client() {
-    disconnect();
+    disconnect(true);
 }
 
 // Public methods
@@ -31,7 +31,7 @@ bool websocket_client::connect(const std::string& url) {
         std::cerr << "Failed to perform handshake." << std::endl;
 
         curl_easy_cleanup(curl_);
-        curl_global_cleanup();
+        //curl_global_cleanup();
         return false;
     }
     setup_wslay_event_callbacks();
@@ -40,14 +40,16 @@ bool websocket_client::connect(const std::string& url) {
     return true;
 }
 
-void websocket_client::disconnect() {
+void websocket_client::disconnect(bool clear_curl) {
     if (!is_connected()) {
         return;
     }
 
     is_connected_ = false;
     curl_easy_cleanup(curl_);
-    curl_global_cleanup();
+    if (clear_curl) {
+        curl_global_cleanup();
+    }
 
     if (ws_thread_.joinable()) {
         ws_thread_.join();
