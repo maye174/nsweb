@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.15.0)
 project(nsweb LANGUAGES CXX C)
 
 option(BUILD_TESTS "Build nsweb test cases" OFF)
+set(WSLAY_STATIC ON)
+set(WSLAY_CONFIGURE_INSTALL OFF)
+add_subdirectory(wslay)
 
 # target
 add_library(nsweb STATIC "")
