@@ -14,7 +14,7 @@ target("nsweb")
     if is_mode("debug") then
         add_defines("NSWEB_DEBUG")
     end
-    add_includedirs("wslay/lib/includes")
+    --add_includedirs("wslay/lib/includes")
     add_packages("libcurl", "mbedtls", "wslay")
 
 target("nsweb_test")
