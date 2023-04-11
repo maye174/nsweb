@@ -19,7 +19,7 @@ int main() {
 
         //std::this_thread::sleep_for(std::chrono::seconds(1));
         // 向服务器发送一条消息
-        std::string message = "<span style='color:red;'>任何消息</span>";
+        std::string message = "<span style='color:red;'>任何消息12134wergdfbhy8ok67utyjrhdfqfaerh</span>";
         if (ws_client.send(message)) {
             std::cout << "Sent message to server: " << message << std::endl;
         } else {

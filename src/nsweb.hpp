@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <queue>
 #include <string>
 #include <vector>
 #include <thread>
@@ -22,26 +23,38 @@ namespace nsweb {
         void disconnect(bool clear_curl);
         bool is_connected() const;
 
-        bool send(const std::string data);
+        bool send(const std::string &data);
         void set_onmessage_callback(std::function<void(const std::string&)> callback);
 
     private:
-        static size_t header_callback(char* buffer, size_t size, size_t nitems, void* userdata);
-        static size_t write_callback(char* buffer, size_t size, size_t nitems, void* userdata);
-        static ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t* data, size_t len, int flags, void* user_data);
+        static int gen_mask_callback(uint8_t *buf, size_t len, void *user_data);
+        static ssize_t send_callback(const uint8_t* data, size_t len, int flags, void* user_data);
+
         static ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t* buf, size_t len, int flags, void* user_data);
         static void on_msgrecv_callback(wslay_event_context_ptr ctx, const struct wslay_event_on_msg_recv_arg* arg, void* user_data);
 
         bool perform_handshake(const std::string& url);
         void setup_wslay_event_callbacks();
-        void websocket_client_thread();
+
+        void websocket_client_thread_send();
+        void websocket_client_thread_recv();
+
+        bool is_send_queue_empty();
 
         CURL* curl_;
+        std::queue<wslay_frame_iocb> send_queue_;
         wslay_event_context_ptr wslay_ctx_;
-        std::thread ws_thread_;
-        std::mutex ws_mutex_;
-        //bool is_connected_;
-        std::atomic_bool is_connected_{false};
+        wslay_frame_context_ptr wslay_frame_ctx_;
+        //锁
+        std::mutex ws_mutex_queue;
+        std::mutex ws_mutex_curl;
+
+        //线程
+        std::thread ws_thread_send;
+        std::thread ws_thread_recv;
+
+
+        std::atomic_bool is_connected_;
         std::function<void(const std::string&)> onmessage_callback_;
     };
 }
