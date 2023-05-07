@@ -14,7 +14,7 @@ std::vector<std::string> extract_danmu_messages(const std::vector<std::string>& 
 
             if (json_message.contains("cmd") && json_message["cmd"] == "DANMU_MSG") {
                 if (json_message.contains("info") && json_message["info"].is_array() && json_message["info"].size() > 1) {
-                    danmu_messages.push_back(json_message["info"][1].get<std::string>());
+                    danmu_messages.emplace_back(json_message["info"][1].get<std::string>());
                 }
             }
         } catch (const nlohmann::json::parse_error& e) {
