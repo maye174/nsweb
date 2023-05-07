@@ -1,5 +1,5 @@
 add_rules("mode.debug", "mode.release")
-add_requires("libcurl", "mbedtls", "wslay")
+add_requires( "nlohmann_json", "zlib")--"libcurl", "mbedtls", "wslay",
 
 --[[
 target("wslay")
@@ -24,6 +24,19 @@ target("nsweb_test")
     add_includedirs("src")
     --add_packages("libcurl", "mbedtls")
     --add_deps("nsweb")
+
+target("mongoose")
+    --add_deps("nsweb")
+    set_kind("static")
+    add_files("mongoose/*.c")
+
+
+target("live")
+    add_deps("mongoose")
+    set_kind("binary")
+    add_files("live/*.cpp")
+    add_includedirs("mongoose")
+    add_packages("nlohmann_json", "zlib")
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --

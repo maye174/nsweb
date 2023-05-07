@@ -9,6 +9,7 @@
 #include <mutex>
 #include <atomic>
 #include <functional>
+#include <condition_variable>
 #include <curl/curl.h>
 #include <wslay/wslay.h>
 
@@ -48,6 +49,7 @@ namespace nsweb {
         //锁
         std::mutex ws_mutex_queue;
         std::mutex ws_mutex_curl;
+        std::condition_variable ws_send_cv;
 
         //线程
         std::thread ws_thread_send;

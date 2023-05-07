@@ -104,6 +104,7 @@ bool websocket_client::send(const std::string &data) {
 #endif
 
     wslay_frame_iocb frame;
+    std::vector<wslay_frame_iocb> send_queue_now;
     for (int i = 0; i < split_data.size(); ++i) {
         
         if(i == split_data.size() - 1){
@@ -123,15 +124,17 @@ bool websocket_client::send(const std::string &data) {
         frame.mask = 1;
         frame.data = (const uint8_t *)split_data[i].c_str();
         frame.data_length = split_data[i].size();
-        
-        //加锁
-        std::unique_lock<std::mutex> lock(ws_mutex_queue);
-        send_queue_.emplace(frame);
-#ifdef NSWEB_DEBUG
-        std::cout<< "send_queue.size() = " << send_queue_.size() << std::endl;
-#endif
-        lock.unlock();
+        send_queue_now.emplace_back(frame);
     }
+#ifdef NSWEB_DEBUG
+        std::cout<< "send_queue.size() = " << send_queue_now.size() << std::endl;
+#endif
+        std::unique_lock<std::mutex> lock(ws_mutex_queue);
+        for(auto &it : send_queue_now){
+            send_queue_.emplace(it);
+        }
+        ws_send_cv.notify_one();
+        lock.unlock();
 #ifdef NSWEB_DEBUG
     std::cout<< "!is_send_queue_empty(): " << !is_send_queue_empty() << std::endl;
 #endif
@@ -288,31 +291,30 @@ bool websocket_client::perform_handshake(const std::string& url) {
 
 bool websocket_client::is_send_queue_empty(){
     std::unique_lock<std::mutex> lock(ws_mutex_queue);
-    bool t = send_queue_.empty();
-    lock.unlock();
-    return t;
+    return send_queue_.empty();
 }
 
 void websocket_client::websocket_client_thread_send(){
     while (is_connected()) {
         if (is_send_queue_empty()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(60));
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
             continue;
         }
 
         std::unique_lock<std::mutex> lock(ws_mutex_queue);
-        std::unique_lock<std::mutex> lock1(ws_mutex_curl);
 
+        //ws_send_cv.wait(lock, [this] { return !is_send_queue_empty(); });
         // 从队列中取出一帧
         wslay_frame_iocb frame = send_queue_.front();
 
         int wslay_send_result;
         do {
+            std::unique_lock<std::mutex> lock1(ws_mutex_curl);
             wslay_send_result = wslay_frame_send(wslay_frame_ctx_, &frame);
             if (wslay_send_result == WSLAY_ERR_WOULDBLOCK) {
                 std::this_thread::yield(); // 添加 yield 以允许其他任务执行
             }
-        } while (wslay_send_result == WSLAY_ERR_WOULDBLOCK);
+        } while (wslay_send_result == WSLAY_ERR_WOULDBLOCK && !is_send_queue_empty() && is_connected());
 #ifdef NSWEB_DEBUG
         switch (wslay_send_result) {
             case 0:
@@ -335,9 +337,7 @@ void websocket_client::websocket_client_thread_send(){
         std::cerr << "send_queue_size: " << send_queue_.size() << std::endl;
 #endif
         send_queue_.pop();
-
         lock.unlock();
-        lock1.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
